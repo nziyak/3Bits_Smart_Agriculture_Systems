@@ -126,7 +126,9 @@ The system follows a modular multi-tier architecture to ensure high cohesion and
 .
 |-- docs/
 |   |-- deliverables/
-|   |   `-- 1-requirements-analysis/   # Requirements Analysis Document (RAD) and templates
+|   |   `-- 1-requirements-analysis/
+|   |       |-- RAD.md                 # Requirements Analysis Document (Deliverable #1)
+|   |       `-- *.pdf                  # Course assignment brief and RAD template
 |   `-- project-definition/            # Formal project specification and requirements
 `-- README.md                          # Project documentation and architectural overview
 ```

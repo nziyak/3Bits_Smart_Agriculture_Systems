@@ -1,0 +1,9 @@
+# Temporary RAD draft components
+rad-parts/
+docs/deliverables/1-requirements-analysis/rad-parts/
+
+# OS / Editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*~
