@@ -103,7 +103,14 @@ The remainder of this document outlines the current state of greenhouse manageme
 
 ## 2 Current system
 
-*Section 2 content to be detailed in subsequent revision.*
+Traditional greenhouse management relies on manual labor, localized standalone controllers, or rudimentary timer-based relays:
+1. **Manual Inspection and Sampling**: Operators manually measure soil moisture using handheld probes, read wall-mounted thermometers, and observe sunlight levels. This approach is labor-intensive, error-prone, and incapable of continuous 24/7 monitoring.
+2. **Delayed Intervention**: Because physical readings are taken periodically, micro-climate anomalies—such as unexpected cold snaps, heatwaves, or rapid soil desiccation—are frequently detected only after crop damage or stress has occurred.
+3. **Siloed and Inflexible Equipment**: Existing analog thermostats, pump timers, and mechanical roof vents operate independently without central coordination. For instance, a heater may operate simultaneously with ventilation curtains, resulting in extreme energy waste.
+4. **Lack of Policy Flexibility**: Conventional automation systems operate on static, hard-coded thresholds. They cannot dynamically balance resource conservation (e.g., water/energy restrictions) against high-yield commercial objectives based on external context.
+5. **Absence of Centralized Provenance**: When equipment fails or operates unexpectedly, operators have no centralized event audit trail to diagnose whether the action was triggered by an automation fault or a manual command.
+
+The proposed software replaces these disparate and manual workflows with a unified, event-driven, intelligent object-oriented controller platform.
 
 ---
 
