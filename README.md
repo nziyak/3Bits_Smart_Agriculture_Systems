@@ -138,3 +138,7 @@ The system follows a modular multi-tier architecture to ensure high cohesion and
 - **Course**: CSE443 - Object-Oriented Analysis and Design
 - **Deliverable**: Smart Agriculture & Greenhouse IoT Controller Systems
 - **Team**: 3Bits
+- **Team Members**:
+  - Nuri Ziya Kırtepe
+  - Muhammed Korkmaz
+  - Derya Uysal
