@@ -177,7 +177,41 @@ All functional requirements are organized by functional subsystem and authored a
 - **FR-38**: The system shall provide visual indications explaining the rationalization behind each automated actuator command (e.g., triggered rule, initiating sensor, active strategy).
 
 ### 3.3 Nonfunctional requirements
-*TBD*
+
+#### 3.3.1 Usability
+- **NFR-1**: The user interface shall provide clear visual separation between automatic system activations and manual operator overrides.
+- **NFR-2**: All critical environmental alerts (e.g., frost hazard, severe drought) shall be visually prominent within the monitoring dashboard within 1 second of occurrence.
+- **NFR-3**: The dashboard shall display all environmental metrics using standardized engineering units (Celsius for temperature, percentage for moisture, Lux for illumination).
+
+#### 3.3.2 Reliability
+- **NFR-4**: The software engine shall handle individual sensor failure events without crashing or corrupting adjacent zone monitoring routines.
+- **NFR-5**: Conflicting rule evaluations (e.g., simultaneous heat and vent requests) shall fail gracefully into safe fallback states governed by the active control strategy.
+- **NFR-6**: The system state shall remain consistent under rapid simulation clock speed multipliers (up to 100x real-time speed).
+
+#### 3.3.3 Performance
+- **NFR-7**: The event dispatch pipeline shall deliver a sensor state update to all registered observers within 50 milliseconds in a simulated execution environment.
+- **NFR-8**: The rule engine shall complete evaluation of all registered zone rules within 100 milliseconds following a telemetry update event.
+- **NFR-9**: The dashboard user interface shall maintain a minimum rendering refresh rate of 30 frames per second during continuous simulation.
+
+#### 3.3.4 Supportability
+- **NFR-10**: The architecture shall allow adding new sensor models or actuator types by subclassing base abstractions without modifying existing zone or rule engine classes (Open/Closed Principle).
+- **NFR-11**: The strategy pipeline shall allow integration of new specialized control policies without recompilation or alteration of the domain model.
+
+#### 3.3.5 Implementation
+- **NFR-12**: The application shall be designed following strict object-oriented paradigms using a strongly-typed object-oriented language.
+- **NFR-13**: The system shall strictly decouple domain model classes from presentation components and concrete persistence stores.
+
+#### 3.3.6 Interface
+- **NFR-14**: All device abstractions (Sensor, Actuator) shall expose standardized, contract-based programming interfaces.
+- **NFR-15**: The presentation tier shall interact with domain models exclusively through defined controller and facade interfaces.
+
+#### 3.3.7 Packaging
+- **NFR-16**: The complete deliverable shall be packaged and version-controlled within the official team GitHub repository according to course guidelines.
+- **NFR-17**: The project repository shall contain all documentation, architectural diagrams, and build configuration files required for execution.
+
+#### 3.3.8 Legal
+- **NFR-18**: The software and documentation shall comply with academic honesty regulations and the course project collaboration guidelines.
+- **NFR-19**: Any third-party software libraries utilized shall adhere to open-source licenses compatible with educational and commercial development.
 
 ### 3.4 System models
 *TBD*
