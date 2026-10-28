@@ -116,13 +116,65 @@ The proposed software replaces these disparate and manual workflows with a unifi
 
 ## 3 Proposed system
 
-*Section 3 content to be detailed in subsequent revision.*
-
 ### 3.1 Overview
-*TBD*
+The proposed Smart Agriculture and Greenhouse IoT Controller System models physical greenhouse infrastructure as an interconnected hierarchy of software abstractions. The system monitors multiple micro-climate zones in real time via simulated sensor networks, processes environmental updates through a polymorphic rule engine, applies specialized control strategies to arbitrate actuator actions, and provides supervisors with a comprehensive monitoring and manual override console.
 
 ### 3.2 Functional requirements
-*TBD*
+All functional requirements are organized by functional subsystem and authored according to the Easy Approach to Requirements Syntax (EARS) standard using the *"The system shall..."* formulation.
+
+#### Subsystem 1: Greenhouse and Zone Management
+- **FR-1**: The system shall allow operators to create, configure, and remove virtual greenhouse instances.
+- **FR-2**: The system shall allow operators to add, reconfigure, and delete greenhouse zones within a greenhouse instance.
+- **FR-3**: The system shall allow operators to configure target environmental parameter ranges (soil moisture, temperature, light levels) for each individual zone.
+- **FR-4**: The system shall allow operators to associate sensors and actuators with specific greenhouse zones.
+- **FR-5**: The system shall maintain zone components in a composite structure capable of aggregating operational status across all contained devices.
+- **FR-6**: The system shall provide visual zone summaries and detailed individual zone diagnostics upon operator request.
+
+#### Subsystem 2: Sensor Management and Telemetry
+- **FR-7**: The system shall support heterogeneous sensor models including soil moisture sensors, ambient temperature sensors, and sunlight/lux sensors through a common sensor abstraction.
+- **FR-8**: The system shall maintain identifying metadata, operational status, engineering units, associated zone, and timestamped readings for each registered sensor.
+- **FR-9**: The system shall periodically acquire telemetry readings from all operational sensors as virtual simulation time advances.
+- **FR-10**: The system shall generate an update event and broadcast telemetry whenever a sensor measurement changes or exceeds configured boundary values.
+- **FR-11**: The system shall detect and record sensor failure states when a sensor produces invalid readings or becomes unresponsive.
+
+#### Subsystem 3: Actuator Management and Manual Override
+- **FR-12**: The system shall model heterogeneous actuators including irrigation pumps, heating coils/systems, and automated shade curtains through a common actuator abstraction.
+- **FR-13**: The system shall allow authorized automation rules and operators to activate, deactivate, and configure operational parameters of any registered actuator.
+- **FR-14**: The system shall allow operators to issue priority manual override commands to force an actuator into an active or inactive state.
+- **FR-15**: The system shall maintain an explicit operational mode indicator (Automatic vs. Manual Override) for every actuator.
+- **FR-16**: When an actuator is placed under manual override, the system shall suppress automated rule activations directed at that specific actuator until manual control is relinquished.
+- **FR-17**: The system shall allow operators to return a manually overridden actuator back to automatic regulation.
+- **FR-18**: The system shall log all actuator state transitions along with the commanding provenance (Rule Engine vs. Manual Operator).
+
+#### Subsystem 4: Rule Engine and Polymorphic Processing
+- **FR-19**: The system shall provide an extensible rule evaluation engine that processes environmental events dispatched by sensors.
+- **FR-20**: The system shall evaluate environmental conditions polymorphically through specialized condition subclasses without inspecting concrete device types.
+- **FR-21**: The system shall evaluate boundary conditions including low soil moisture, excessive heat, sub-threshold frost conditions, and excessive solar irradiance.
+- **FR-22**: The system shall evaluate compound multi-variable conditions combining multiple environmental metrics simultaneously.
+- **FR-23**: The system shall trigger corresponding environmental correction actions when evaluation rule conditions evaluate to true.
+- **FR-24**: The system shall deactivate triggered actuators when environmental metrics return within acceptable target ranges.
+
+#### Subsystem 5: Control Strategy Management
+- **FR-25**: The system shall support interchangeable environmental control policies via a common strategy abstraction.
+- **FR-26**: The system shall implement an **EcoMode** strategy that minimizes water and electricity consumption by extending acceptable environmental tolerances and deferring non-critical actuation.
+- **FR-27**: The system shall implement a **HighYieldGrowth** strategy that prioritizes optimal micro-climate conditions to maximize crop growth rates.
+- **FR-28**: The system shall implement a **FrostProtection** strategy that prioritizes heating and enclosure protection over power conservation during low-temperature events.
+- **FR-29**: The system shall allow operators to switch the active control strategy at runtime without restarting the application or modifying core rule engine components.
+
+#### Subsystem 6: Event-Driven Pipeline and Notifications
+- **FR-30**: The system shall distribute telemetry notifications from sensors to subscribers via an asynchronous publish-subscribe observer mechanism.
+- **FR-31**: The system shall dispatch high-priority alert notifications to the user interface when critical environmental conditions (drought, frost, extreme overheating) are detected.
+- **FR-32**: The system shall dispatch warning alerts when device faults or conflicting rule directives are detected.
+- **FR-33**: The system shall maintain historical telemetry measurements and system alert logs separated from current device states.
+
+#### Subsystem 7: Simulation and Virtual Time Progression
+- **FR-34**: The system shall provide a virtual simulation clock supporting discrete step-by-step advancement and continuous scaled-time progression.
+- **FR-35**: As virtual time progresses, the system shall dynamically calculate environmental changes including soil moisture evaporation, thermal dissipation, and solar diurnal cycles.
+- **FR-36**: The system shall allow operators to pause, resume, and adjust the execution speed factor of the virtual simulation clock.
+
+#### Subsystem 8: Monitoring Dashboard and User Interface
+- **FR-37**: The system shall render a centralized monitoring dashboard presenting real-time zone states, sensor readings, active actuators, and the currently active control strategy.
+- **FR-38**: The system shall provide visual indications explaining the rationalization behind each automated actuator command (e.g., triggered rule, initiating sensor, active strategy).
 
 ### 3.3 Nonfunctional requirements
 *TBD*
