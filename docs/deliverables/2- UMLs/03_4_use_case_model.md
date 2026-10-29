@@ -48,7 +48,7 @@ USE CASE: UC-1 Configure Greenhouse & Zones
 ---------------------------------------------------------------------------------
 Primary Actor:    Greenhouse Operator
 Scope:            Greenhouse Facility Configuration
-Preconditions:    Operator is logged into the management system.
+Preconditions:    The system is initialized and operational.
 Trigger:          Operator selects "Facility Management" from the navigation menu.
 Main Flow:
   1. Operator requests creation of a new greenhouse zone.

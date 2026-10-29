@@ -169,7 +169,7 @@ All functional requirements are organized by functional subsystem and authored a
 
 #### Subsystem 7: Simulation and Virtual Time Progression
 - **FR-34**: The system shall provide a virtual simulation clock supporting discrete step-by-step advancement and continuous scaled-time progression.
-- **FR-35**: As virtual time progresses, the system shall dynamically calculate environmental changes including soil moisture evaporation, thermal dissipation, and solar diurnal cycles.
+- **FR-35**: The system shall dynamically calculate environmental changes including soil moisture evaporation, thermal dissipation, and solar diurnal cycles as virtual simulation time advances.
 - **FR-36**: The system shall allow operators to pause, resume, and adjust the execution speed factor of the virtual simulation clock.
 
 #### Subsystem 8: Monitoring Dashboard and User Interface
@@ -302,7 +302,7 @@ USE CASE: UC-1 Configure Greenhouse & Zones
 ---------------------------------------------------------------------------------
 Primary Actor:    Greenhouse Operator
 Scope:            Greenhouse Facility Configuration
-Preconditions:    Operator is logged into the management system.
+Preconditions:    The system is initialized and operational.
 Trigger:          Operator selects "Facility Management" from the navigation menu.
 Main Flow:
   1. Operator requests creation of a new greenhouse zone.
