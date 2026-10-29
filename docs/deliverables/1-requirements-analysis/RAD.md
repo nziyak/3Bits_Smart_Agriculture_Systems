@@ -214,22 +214,561 @@ All functional requirements are organized by functional subsystem and authored a
 - **NFR-19**: Any third-party software libraries utilized shall adhere to open-source licenses compatible with educational and commercial development.
 
 ### 3.4 System models
-*TBD*
+
+#### 3.4.1 Scenarios
+
+##### Scenario 1: Low Soil Moisture Event and Automated Irrigation in EcoMode
+- **Context**: Zone 1 contains tomato crops. The active control strategy is set to **EcoMode**. Virtual time advances to 14:00.
+- **Execution**:
+  1. The Soil Moisture Sensor in Zone 1 measures 22% volumetric water content (below the configured 25% threshold).
+  2. The sensor generates a `SensorUpdateEvent` and broadcasts it to registered observers.
+  3. The Rule Engine evaluates the `LowMoistureRule`.
+  4. The active strategy (**EcoMode**) evaluates the condition: because EcoMode is designed for resource conservation, it checks if the reading is below the absolute safety limit (20%) or if off-peak evaporation hours apply. It approves a short, pulsed irrigation cycle.
+  5. The Irrigation Pump actuator for Zone 1 is activated with a 5-minute duty cycle.
+  6. The dashboard updates, displaying the active pump and an audit notice: *"Zone 1 Irrigation Pump activated by LowMoistureRule under EcoMode"*.
+
+##### Scenario 2: Sudden Temperature Drop and FrostProtection Intervention
+- **Context**: Nighttime simulation in Zone 2. Ambient temperature drops rapidly due to a simulated cold front.
+- **Execution**:
+  1. Ambient Temperature Sensor records a decline from 6°C to 1.5°C (falling below the 3°C frost hazard threshold).
+  2. The sensor fires an urgent event notification.
+  3. The Rule Engine evaluates the `FrostHazardRule`.
+  4. The active strategy (**FrostProtection**) preempts all other non-critical operations and immediately commands:
+     - Heating coils in Zone 2 are activated to 100% capacity.
+     - Automated shade/thermal curtains are closed to retain ambient radiant heat.
+  5. The notification subsystem dispatches a high-priority `CRITICAL_ALERT: Frost Condition Detected in Zone 2`.
+  6. The dashboard highlights Zone 2 in red and presents the active heating intervention.
+
+##### Scenario 3: Manual Actuator Override and Mode Synchronization
+- **Context**: A human greenhouse supervisor inspects Zone 1 and observes maintenance work requiring dry soil.
+- **Execution**:
+  1. The operator selects Zone 1's Irrigation Pump on the dashboard console.
+  2. The operator selects "Manual Override: FORCE OFF".
+  3. The system sets the pump's operational mode to `MANUAL_OVERRIDE` and forces the actuator state to `INACTIVE`.
+  4. A subsequent sensor update triggers the automated `LowMoistureRule`.
+  5. The rule engine inspects the actuator status, identifies the `MANUAL_OVERRIDE` lock, and suppresses the automated turn-on signal.
+  6. The system logs: *"Automated activation suppressed for Zone 1 Irrigation Pump (Manual Override Active)"*.
+  7. When maintenance completes, the operator toggles the pump back to `AUTOMATIC`. Automated rule processing resumes.
+
+---
+
+#### 3.4.2 Use case model
+
+##### Actors
+- **Greenhouse Operator / Supervisor (Primary Human Actor)**: Configures greenhouse zones, defines environmental rules, switches control strategies, inspects telemetry dashboards, and executes manual actuator overrides.
+- **Simulation Clock (Primary System Actor)**: Drives virtual time progression and triggers periodic sensor telemetry sampling.
+- **Hardware / Device Service (Supporting System Actor)**: Simulates physical hardware I/O, device degradation, and telemetry generation.
+
+##### Use Case Diagram (UML)
+
+```mermaid
+flowchart LR
+    Operator((Greenhouse Operator))
+    SimClock((Simulation Clock))
+    HwService((Device Service))
+
+    subgraph Smart Agriculture & Greenhouse IoT Controller System
+        UC1[UC-1: Configure Greenhouse & Zones]
+        UC2[UC-2: Manage Device Allocations]
+        UC3[UC-3: Set Environmental Targets]
+        UC4[UC-4: Select Active Control Strategy]
+        UC5[UC-5: Monitor Dashboard & Telemetry]
+        UC6[UC-6: Execute Manual Override]
+        UC7[UC-7: Advance Simulation Time]
+        UC8[UC-8: Evaluate Environmental Rules]
+        UC9[UC-9: Dispatch Critical Alerts]
+        UC10[UC-10: Trigger Actuator Action]
+    end
+
+    Operator --> UC1
+    Operator --> UC2
+    Operator --> UC3
+    Operator --> UC4
+    Operator --> UC5
+    Operator --> UC6
+
+    SimClock --> UC7
+    UC7 -.->|«include»| UC8
+    UC8 -.->|«include»| UC10
+    UC8 -.->|«extend»| UC9
+
+    HwService --> UC10
+```
+
+##### Detailed Use Case Specifications
+
+```
+USE CASE: UC-1 Configure Greenhouse & Zones
+---------------------------------------------------------------------------------
+Primary Actor:    Greenhouse Operator
+Scope:            Greenhouse Facility Configuration
+Preconditions:    Operator is logged into the management system.
+Trigger:          Operator selects "Facility Management" from the navigation menu.
+Main Flow:
+  1. Operator requests creation of a new greenhouse zone.
+  2. System prompts for zone identifier, label, and dimension parameters.
+  3. Operator submits zone parameters.
+  4. System instantiates the Zone composite object and adds it to the Greenhouse.
+  5. System presents updated greenhouse layout on the dashboard.
+Alternative Flow:
+  2a. Duplicate zone identifier entered: System alerts operator and requests unique ID.
+Postconditions:   New zone is registered, persistent, and ready for device allocation.
+Associated FRs:   FR-1, FR-2, FR-5, FR-6
+```
+
+```
+USE CASE: UC-4 Select Active Control Strategy
+---------------------------------------------------------------------------------
+Primary Actor:    Greenhouse Operator
+Scope:            Environmental Control Strategy Pipeline
+Preconditions:    Greenhouse facility contains at least one active zone.
+Trigger:          Operator requests a policy change on the control console.
+Main Flow:
+  1. Operator views current active strategy (e.g., EcoMode).
+  2. Operator selects an alternate policy (e.g., HighYieldGrowth or FrostProtection).
+  3. System prompts for strategy application scope (global or zone-specific).
+  4. Operator confirms selection.
+  5. System binds the selected Strategy instance to the Rule Evaluation Engine.
+  6. Subsequent environmental rule resolutions apply the new policy criteria.
+Postconditions:   Active strategy updated dynamically without system restart.
+Associated FRs:   FR-25, FR-26, FR-27, FR-28, FR-29
+```
+
+```
+USE CASE: UC-6 Execute Manual Override
+---------------------------------------------------------------------------------
+Primary Actor:    Greenhouse Operator
+Scope:            Actuator Subsystem
+Preconditions:    Target actuator is registered in a zone and currently operational.
+Trigger:          Operator clicks manual override toggle on actuator card.
+Main Flow:
+  1. Operator selects target actuator and commands state change (FORCE_ON / FORCE_OFF).
+  2. System sets actuator state to commanded value.
+  3. System updates actuator control mode from AUTOMATIC to MANUAL_OVERRIDE.
+  4. System registers an audit log entry detailing operator command and timestamp.
+  5. System visually flags the actuator on the dashboard as manually locked.
+Alternative Flow:
+  1a. Operator selects "RELEASE OVERRIDE": System restores control mode to AUTOMATIC
+      and permits rule-based automation to dictate actuator state.
+Postconditions:   Actuator is locked in manual state; automated rules cannot override.
+Associated FRs:   FR-14, FR-15, FR-16, FR-17, FR-18
+```
+
+```
+USE CASE: UC-8 Evaluate Environmental Rules
+---------------------------------------------------------------------------------
+Primary Actor:    Simulation Clock / Sensor Event
+Scope:            Event-Driven Rule Processing
+Preconditions:    Sensors are active and registered with the event bus.
+Trigger:          A sensor publishes a new telemetry measurement.
+Main Flow:
+  1. Sensor publishes SensorUpdateEvent to the event dispatcher.
+  2. Event dispatcher notifies the Rule Evaluation Engine.
+  3. Rule Engine identifies all rules mapped to the reporting zone and metric type.
+  4. Rule Engine polymorphically invokes evaluation logic for each rule.
+  5. Condition evaluates to TRUE (e.g., soil moisture below threshold).
+  6. Rule Engine queries active ControlStrategy for action arbitration.
+  7. Actuation command dispatched to target actuator (UC-10).
+  8. Dashboard and event logs updated with rule triggering provenance.
+Alternative Flow:
+  5a. Condition evaluates to FALSE: No actuator action taken; telemetry logged.
+Postconditions:   Appropriate actuators activated/deactivated according to policy.
+Associated FRs:   FR-10, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24
+```
+
+---
+
+#### 3.4.3 Object model
+
+The Conceptual Domain Model represents domain concepts, attributes, and relationships without implementation details (such as concrete class methods or database foreign keys), adhering strictly to the analysis activity standards.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Greenhouse {
+        String greenhouseId
+        String name
+        String location
+    }
+
+    class Zone {
+        String zoneId
+        String name
+        String cropType
+        Float targetTemperature
+        Float targetMoisture
+        Float targetSunlight
+    }
+
+    class GreenhouseComponent {
+        <<Abstract>>
+        String componentId
+        String name
+        Boolean operationalStatus
+    }
+
+    class Sensor {
+        <<Abstract>>
+        String sensorId
+        String sensorType
+        Float currentReading
+        String unitOfMeasure
+        DateTime lastUpdated
+    }
+
+    class SoilMoistureSensor {
+        Float depthCentimeters
+    }
+
+    class TemperatureSensor {
+        Float calibrationOffset
+    }
+
+    class SunlightSensor {
+        Float spectrumRangeNm
+    }
+
+    class Actuator {
+        <<Abstract>>
+        String actuatorId
+        String actuatorType
+        Boolean isActive
+        String controlMode
+        DateTime stateChangedAt
+    }
+
+    class IrrigationPump {
+        Float flowRateLitersPerMin
+    }
+
+    class HeatingSystem {
+        Float maxHeatOutputKw
+    }
+
+    class ShadeCurtain {
+        Float opacityPercentage
+    }
+
+    class Rule {
+        <<Abstract>>
+        String ruleId
+        String ruleName
+        Boolean isEnabled
+    }
+
+    class ThresholdRule {
+        String metricType
+        String comparisonOperator
+        Float thresholdValue
+    }
+
+    class CompoundRule {
+        String logicalOperator
+    }
+
+    class ControlStrategy {
+        <<Abstract>>
+        String strategyName
+        String description
+    }
+
+    class EcoMode {
+        Float conservationFactor
+    }
+
+    class HighYieldGrowth {
+        Float toleranceWindow
+    }
+
+    class FrostProtection {
+        Float criticalThresholdCelsius
+    }
+
+    class Alert {
+        String alertId
+        String severityLevel
+        String message
+        DateTime timestamp
+        Boolean isAcknowledged
+    }
+
+    class SimulationClock {
+        DateTime virtualTime
+        Float timeScaleMultiplier
+        Boolean isRunning
+    }
+
+    %% Relationships
+    Greenhouse "1" *-- "1..*" Zone : contains
+    Zone --|> GreenhouseComponent
+    Sensor --|> GreenhouseComponent
+    Actuator --|> GreenhouseComponent
+
+    Zone "1" *-- "0..*" GreenhouseComponent : aggregates (Composite)
+
+    Sensor <|-- SoilMoistureSensor
+    Sensor <|-- TemperatureSensor
+    Sensor <|-- SunlightSensor
+
+    Actuator <|-- IrrigationPump
+    Actuator <|-- HeatingSystem
+    Actuator <|-- ShadeCurtain
+
+    Zone "1" o-- "0..*" Rule : evaluates
+    Rule <|-- ThresholdRule
+    Rule <|-- CompoundRule
+
+    Rule "0..*" --> "1" Actuator : targets
+    Rule "0..*" ..> ControlStrategy : arbitrated by
+
+    ControlStrategy <|-- EcoMode
+    ControlStrategy <|-- HighYieldGrowth
+    ControlStrategy <|-- FrostProtection
+
+    Zone "1" o-- "0..*" Alert : generates
+    SimulationClock "1" ..> Greenhouse : drives
+```
+
+---
+
+#### 3.4.4 Dynamic model
+
+##### Sequence Diagram 1: Telemetry Event, Rule Evaluation, and Actuator Dispatch
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Sim as SimulationClock
+    participant S as TemperatureSensor
+    participant EB as EventDispatcher (Observer)
+    participant RE as RuleEngine
+    participant CS as ControlStrategy (FrostProtection)
+    participant A as HeatingSystem
+    participant UI as DashboardUI
+
+    Sim->>S: advanceTime(step)
+    S->>S: sampleEnvironment() [Reading: 1.2 C]
+    S->>EB: publish(SensorUpdateEvent)
+    
+    activate EB
+    EB->>UI: notifyTelemetryUpdate(S)
+    EB->>RE: onSensorEvent(SensorUpdateEvent)
+    activate RE
+    
+    RE->>RE: evaluateRule(FrostHazardRule)
+    Note over RE: Condition Met: 1.2 C < 3.0 C Threshold
+    
+    RE->>CS: arbitrateAction(FrostHazardRule, HeatingSystem)
+    activate CS
+    CS-->>RE: approvedCommand(ACTIVATE, capacity=1.0)
+    deactivate CS
+    
+    RE->>A: executeCommand(ACTIVATE)
+    activate A
+    A->>A: setActive(true)
+    A-->>RE: commandAcknowledged(isActive=true)
+    deactivate A
+    
+    RE->>EB: publish(ActuatorStateChangeEvent)
+    RE->>EB: publish(AlertEvent: CRITICAL_FROST)
+    deactivate RE
+    
+    EB->>UI: notifyActuatorUpdate(A)
+    EB->>UI: displayAlert(CRITICAL_FROST)
+    deactivate EB
+```
+
+##### Sequence Diagram 2: Manual Operator Override and Automation Suppression
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Op as Greenhouse Operator
+    participant UI as DashboardUI
+    participant Ctrl as ActuatorController
+    participant Act as IrrigationPump
+    participant RE as RuleEngine
+
+    Op->>UI: click "Force Inactive" on IrrigationPump
+    UI->>Ctrl: submitManualOverride(pumpId, FORCE_OFF)
+    activate Ctrl
+    
+    Ctrl->>Act: setControlMode(MANUAL_OVERRIDE)
+    Ctrl->>Act: setActive(false)
+    Act-->>Ctrl: confirmed(mode=MANUAL_OVERRIDE, active=false)
+    
+    Ctrl->>UI: renderManualLockIndicator(pumpId)
+    deactivate Ctrl
+
+    Note over RE: Subsequent Telemetry Triggers LowMoistureRule
+    RE->>Act: inspectStatus()
+    Act-->>RE: returnStatus(mode=MANUAL_OVERRIDE)
+    Note over RE: Command Suppressed: Actuator under Operator Lock
+    RE->>UI: logSuppressedActionNotice(pumpId)
+```
+
+##### State Machine Diagram: Actuator Lifecycle & Control State
+
+```mermaid
+stateDiagram-v2
+    [*] --> Inactive_Auto : Initialize
+
+    state Automatic_Control {
+        Inactive_Auto --> Active_Auto : Rule Condition Met [Strategy Approved]
+        Active_Auto --> Inactive_Auto : Target Reached / Rule Expired
+    }
+
+    state Manual_Override {
+        Active_Manual --> Inactive_Manual : Operator Commands Force Off
+        Inactive_Manual --> Active_Manual : Operator Commands Force On
+    }
+
+    Automatic_Control --> Inactive_Manual : Operator Manual Override [Force Off]
+    Automatic_Control --> Active_Manual : Operator Manual Override [Force On]
+
+    Manual_Override --> Inactive_Auto : Operator Releases Override [Condition Normal]
+    Manual_Override --> Active_Auto : Operator Releases Override [Condition Critical]
+
+    Automatic_Control --> Fault_State : Hardware Malfunction Detected
+    Manual_Override --> Fault_State : Hardware Malfunction Detected
+    Fault_State --> Inactive_Auto : Fault Cleared & Re-initialized
+```
+
+---
+
+#### 3.4.5 User interfaces and Mock-ups
+
+##### Screen 1: Master Dashboard & Zone Overview
+```
++----------------------------------------------------------------------------------------------------+
+| SMART AGRICULTURE & GREENHOUSE IOT CONTROLLER SYSTEM                  [Sim Time: 14:32:00 | 10x]   |
++----------------------------------------------------------------------------------------------------+
+| ACTIVE STRATEGY: [ EcoMode (Resource Conservation) ]  [ Change Policy ]   | Alerts: [2 Critical]  |
++----------------------------------------------------------------------------------------------------+
+| ZONE 1: TOMATO GREENHOUSE (Sector A)              | ZONE 2: NURSERY & SEEDLINGS (Sector B)         |
+| Status: NORMAL                                    | Status: ALERT (FROST HAZARD WARNING)           |
+|---------------------------------------------------|------------------------------------------------|
+| Soil Moisture:    28.4 %   [ OK ]                 | Soil Moisture:    42.1 %   [ OK ]              |
+| Temperature:      23.1 C   [ OK ]                 | Temperature:       1.8 C   [ CRITICAL LOW ]    |
+| Sunlight Level:   850 Lux  [ OK ]                 | Sunlight Level:   120 Lux  [ LOW ]             |
+|---------------------------------------------------|------------------------------------------------|
+| ACTUATORS:                                        | ACTUATORS:                                     |
+|  - Irrigation Pump:   [ OFF ] (AUTO)              |  - Irrigation Pump:   [ OFF ] (AUTO)           |
+|  - Heating Coils:     [ OFF ] (AUTO)              |  - Heating Coils:     [ ON  ] (AUTO - Frost)   |
+|  - Shade Curtains:    [ OPEN] (AUTO)              |  - Shade Curtains:    [ CLOSED] (AUTO)         |
+| [ View Zone Details ]   [ Manual Controls ]       | [ View Zone Details ]   [ Manual Controls ]    |
++----------------------------------------------------------------------------------------------------+
+| RECENT SYSTEM ALERTS & EVENT LOG:                                                                  |
+| [14:31:45] CRITICAL: Zone 2 Temperature dropped to 1.8 C (Threshold: 3.0 C).                       |
+| [14:31:46] ACTION: Zone 2 Heating Coils forced ON by FrostProtection strategy.                     |
+| [14:28:10] NOTICE: Zone 1 Irrigation completed. Soil moisture recovered to 28.4%.                 |
++----------------------------------------------------------------------------------------------------+
+```
+
+##### Screen 2: Zone Detail and Actuator Manual Override Console
+```
++----------------------------------------------------------------------------------------------------+
+| ZONE 1: DETAILED CONTROLS & TELEMETRY                                          [ Return to Master ]|
++----------------------------------------------------------------------------------------------------+
+| SENSOR TELEMETRY                                  | TARGET THRESHOLDS                              |
+| - Soil Moisture Sensor #1: 24.2 %                 | - Moisture Target: 30% (+/- 5%)                |
+| - Ambient Temp Sensor #1:  22.8 C                 | - Temperature Target: 24 C (+/- 2 C)           |
+| - Sunlight Sensor #1:      740 Lux                | - Sunlight Target: 800 Lux (+/- 100 Lux)       |
++---------------------------------------------------+------------------------------------------------+
+| ACTUATOR HARDWARE & MANUAL OVERRIDE CONSOLE                                                        |
+|----------------------------------------------------------------------------------------------------|
+| ACTUATOR NAME       | CURRENT STATE | MODE             | MANUAL ACTION CONTROLS                    |
+|---------------------|---------------|------------------|-------------------------------------------|
+| Irrigation Pump #1  | [ ON  ]       | MANUAL OVERRIDE  | [ FORCE ON ]  [ FORCE OFF ]  [ RELEASE ]  |
+| Heating Coils #1    | [ OFF ]       | AUTOMATIC        | [ FORCE ON ]  [ FORCE OFF ]  [ RELEASE ]  |
+| Shade Curtains #1   | [ OPEN]       | AUTOMATIC        | [ FORCE ON ]  [ FORCE OFF ]  [ RELEASE ]  |
++----------------------------------------------------------------------------------------------------+
+| RECENT RULE EVALUATIONS FOR ZONE 1:                                                                |
+| - LowMoistureRule: TRIGGERED -> Action SUPPRESSED due to active Manual Override.                   |
+| - HighTempVentRule: NOT TRIGGERED (Temperature within optimal window).                             |
++----------------------------------------------------------------------------------------------------+
+```
+
+##### Navigational Paths & Screen Transitions
+
+```mermaid
+flowchart TD
+    S1[Screen 1: Master Dashboard] -->|Click Zone Card| S2[Screen 2: Zone Details & Override]
+    S1 -->|Click Change Policy| S3[Screen 3: Strategy Selection Modal]
+    S1 -->|Click View All Logs| S4[Screen 4: Historical Log & Alert Archive]
+    S2 -->|Click Return| S1
+    S3 -->|Confirm Policy| S1
+    S4 -->|Click Return| S1
+```
 
 ---
 
 ## 4 Glossary of Terms
 
-*Section 4 content to be detailed in subsequent revision.*
+| Term | Definition |
+| :--- | :--- |
+| **Actuator** | A physical or simulated mechanical device (e.g., pump, heating element, motorized curtain) that converts an electrical command into physical action to alter greenhouse climate conditions. |
+| **Audit Trail** | An immutable chronological record of system events, operator overrides, and automated rule executions maintained for diagnostics and traceability. |
+| **Composite Pattern** | A structural design pattern allowing objects to be composed into tree structures to represent part-whole hierarchies, enabling clients to treat individual objects and compositions uniformly. |
+| **Control Strategy** | An encapsulated behavioral policy (e.g., EcoMode, HighYieldGrowth) that arbitrates between conflicting rules and dictates operational trade-offs across greenhouse zones. |
+| **Duty Cycle** | The fraction or duration of time an actuator remains in active operation relative to its total cycle period. |
+| **EARS** | Easy Approach to Requirements Syntax: A standardized ruleset for drafting clear, unambiguous, and testable software requirement statements. |
+| **Manual Override** | An operator intervention that forces an actuator into an active or inactive state, temporarily disabling automated rule-based regulation for that device. |
+| **Observer Pattern** | A behavioral design pattern wherein an object (subject) maintains a list of dependents (observers) and notifies them automatically of state changes without hard dependencies. |
+| **Polymorphism** | The object-oriented capability of providing a single interface to entities of different types, allowing uniform invocation of specialized behavior (e.g., rule evaluation). |
+| **Sensor** | A hardware or simulated device that detects environmental attributes (moisture, temperature, illumination) and transforms them into quantified digital telemetry readings. |
+| **Strategy Pattern** | A behavioral design pattern that defines a family of algorithms, encapsulates each one, and makes them interchangeable at runtime without modifying client code. |
+| **Telemetry** | Quantitative measurements, status signals, and operational metadata transmitted by sensors across the event bus. |
+| **Zone** | A logically or physically bounded micro-climate area within a greenhouse managed with dedicated targets, sensors, and actuators. |
 
 ---
 
 ## 5 Priority
 
-*Section 5 content to be detailed in subsequent revision.*
+Priorities are established using the industry-standard MoSCoW methodology:
+- **Must Have (M)**: Mandatory core functionality required for project deliverable baseline.
+- **Should Have (S)**: High-priority capabilities essential for complete automation and pattern fidelity.
+- **Could Have (C)**: Desirable enhancements to expand simulation realism if time permits.
+- **Won't Have (W)**: Excluded from this deliverable scope (deferred to future milestones).
+
+| Req ID | Requirement Summary | Category | Priority | Justification |
+| :--- | :--- | :--- | :--- | :--- |
+| **FR-1 - FR-6** | Greenhouse and Zone Management | Functional | **Must Have** | Fundamental structural domain model needed to host components. |
+| **FR-7 - FR-11** | Sensor Management & Telemetry | Functional | **Must Have** | Required data source for environmental monitoring and event triggering. |
+| **FR-12 - FR-15** | Actuator Management & Abstractions | Functional | **Must Have** | Core mechanism to enact environmental modifications. |
+| **FR-16 - FR-18** | Manual Override & Provenance Logging | Functional | **Must Have** | Critical requirement specified in project definition section 3.9. |
+| **FR-19 - FR-24** | Polymorphic Rule Engine | Functional | **Must Have** | Key educational objective demonstrating polymorphism and decoupled logic. |
+| **FR-25 - FR-29** | Interchangeable Control Strategies | Functional | **Must Have** | Mandatory application of the Strategy Pattern (EcoMode, HighYield, Frost). |
+| **FR-30 - FR-33** | Observer-Based Event Pipeline | Functional | **Must Have** | Mandatory application of the Observer Pattern for telemetry distribution. |
+| **FR-34 - FR-36** | Virtual Time & Environmental Simulation | Functional | **Should Have** | Essential for automated demonstration of dynamic environmental cycles. |
+| **FR-37 - FR-38** | Monitoring Dashboard & Diagnostics | Functional | **Should Have** | Required for user visibility and explaining rule actuation rationales. |
+| **NFR-1 - NFR-3** | Usability & Metric Standardization | Non-Functional | **Should Have** | Ensures clear user comprehension and unambiguous operator commands. |
+| **NFR-4 - NFR-6** | System Reliability & Graceful Fallback | Non-Functional | **Must Have** | Prevents system crashes during unexpected sensor anomalies or fast simulation. |
+| **NFR-7 - NFR-9** | Event Pipeline & UI Performance | Non-Functional | **Should Have** | Guarantees timely rule processing without UI thread blocking. |
+| **NFR-10 - NFR-11**| Extensibility & Pattern Adherence | Non-Functional | **Must Have** | Primary grading criteria for OOAD principles (Open/Closed Principle). |
+| **NFR-12 - NFR-15**| Object-Oriented Architecture Standards | Non-Functional | **Must Have** | Core academic deliverable requirement. |
+| **NFR-16 - NFR-19**| Packaging, Git, and Academic Integrity | Non-Functional | **Must Have** | Deliverable submission criteria. |
 
 ---
 
 ## 6 Traceability
 
-*Section 6 content to be detailed in subsequent revision.*
+The traceability matrix establishes bi-directional mapping between the initial Project Definition specifications, the Functional Requirements (FR), the Use Cases (UC), and the Conceptual Object Model classes.
+
+| Project Definition Section | Requirement ID (FR) | Associated Use Case | Conceptual Domain Classes |
+| :--- | :--- | :--- | :--- |
+| **3.1 Greenhouse & Zone Mgmt** | FR-1, FR-2, FR-3, FR-4, FR-5, FR-6 | UC-1, UC-2, UC-3 | `Greenhouse`, `Zone`, `GreenhouseComponent` |
+| **3.2 Sensor Management** | FR-7, FR-8, FR-9, FR-11 | UC-2, UC-5 | `Sensor`, `SoilMoistureSensor`, `TemperatureSensor`, `SunlightSensor` |
+| **3.3 Sensor Data Monitoring** | FR-9, FR-10, FR-30, FR-33 | UC-5, UC-8 | `Sensor`, `GreenhouseComponent`, `SimulationClock` |
+| **3.4 Actuator Management** | FR-12, FR-13, FR-18 | UC-2, UC-10 | `Actuator`, `IrrigationPump`, `HeatingSystem`, `ShadeCurtain` |
+| **3.5 Rule-Based Control** | FR-19, FR-21, FR-23, FR-24 | UC-8, UC-10 | `Rule`, `ThresholdRule`, `Actuator` |
+| **3.6 Polymorphic Rule Processing** | FR-20, FR-21, FR-22 | UC-8 | `Rule`, `ThresholdRule`, `CompoundRule` |
+| **3.7 Control Strategies** | FR-25, FR-26, FR-27, FR-28, FR-29 | UC-4, UC-8 | `ControlStrategy`, `EcoMode`, `HighYieldGrowth`, `FrostProtection` |
+| **3.8 Event-Driven Automation** | FR-10, FR-19, FR-23, FR-30 | UC-7, UC-8, UC-10 | `Sensor`, `Rule`, `Actuator`, `SimulationClock` |
+| **3.9 Manual Control** | FR-14, FR-15, FR-16, FR-17, FR-18 | UC-6 | `Actuator`, `GreenhouseComponent` |
+| **3.10 Alerts & Notifications** | FR-31, FR-32, FR-33 | UC-9 | `Alert`, `Zone`, `Sensor` |
+| **3.11 Simulation & Time Progression** | FR-34, FR-35, FR-36 | UC-7 | `SimulationClock`, `Greenhouse`, `Sensor` |
+| **3.12 System Monitoring & Dashboard**| FR-37, FR-38 | UC-5 | `Greenhouse`, `Zone`, `Alert`, `ControlStrategy` |
+| **4.0 Technical Architecture** | NFR-10, NFR-11, NFR-12, NFR-14 | All Use Cases | All Domain Model Classes |
+

@@ -34,9 +34,9 @@ flowchart LR
     Operator --> UC6
 
     SimClock --> UC7
-    UC7 -.->|<<include>>| UC8
-    UC8 -.->|<<include>>| UC10
-    UC8 -.->|<<extend>>| UC9
+    UC7 -.->|«include»| UC8
+    UC8 -.->|«include»| UC10
+    UC8 -.->|«extend»| UC9
 
     HwService --> UC10
 ```
