@@ -119,6 +119,23 @@ classDiagram
         Boolean isRunning
     }
 
+    class RuleEngine {
+        String engineId
+        Boolean isEnabled
+    }
+
+    class EventDispatcher {
+        String dispatcherId
+    }
+
+    class ActuatorController {
+        String controllerId
+    }
+
+    class DashboardUI {
+        String dashboardId
+    }
+
     %% Relationships
     Greenhouse "1" *-- "1..*" Zone : contains
     Zone --|> GreenhouseComponent
@@ -148,6 +165,14 @@ classDiagram
 
     Zone "1" o-- "0..*" Alert : generates
     SimulationClock "1" ..> Greenhouse : drives
+    Sensor "0..*" ..> EventDispatcher : publishes readings
+    EventDispatcher "1" --> "1" RuleEngine : notifies
+    EventDispatcher "1" --> "1" DashboardUI : updates
+    RuleEngine "1" --> "0..*" Rule : evaluates
+    RuleEngine "1" --> "1" ControlStrategy : consults
+    RuleEngine "1" ..> Actuator : issues approved commands
+    DashboardUI "1" ..> ActuatorController : submits override
+    ActuatorController "1" --> "0..*" Actuator : controls
 ```
 
 ---
