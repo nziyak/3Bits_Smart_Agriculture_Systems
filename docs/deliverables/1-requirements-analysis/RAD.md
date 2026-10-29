@@ -376,6 +376,105 @@ Postconditions:   Appropriate actuators activated/deactivated according to polic
 Associated FRs:   FR-10, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24
 ```
 
+
+##### Additional Detailed Use Case Specifications
+
+```text
+USE CASE: UC-2 Manage Device Allocations
+----------------------------------------------------------------------------
+Primary Actor:    Greenhouse Operator
+Preconditions:    A greenhouse zone exists.
+Trigger:          Operator opens device allocation for a zone.
+Main Flow:
+  1. Operator selects a zone.
+  2. System displays registered and available sensors and actuators.
+  3. Operator assigns or removes a device from the selected zone.
+  4. System validates that the device exists and that the allocation is allowed.
+  5. System saves the allocation and refreshes the zone device list.
+Alternative Flow: Unknown device or invalid allocation: system rejects the change and displays an error.
+Postconditions:   Selected device is assigned to or removed from the zone.
+```
+
+```text
+USE CASE: UC-3 Set Environmental Targets
+----------------------------------------------------------------------------
+Primary Actor:    Greenhouse Operator
+Preconditions:    A greenhouse zone exists.
+Trigger:          Operator opens environmental target settings.
+Main Flow:
+  1. Operator selects a zone.
+  2. System displays current temperature, moisture and sunlight targets.
+  3. Operator enters new target values.
+  4. System validates the target values against allowed ranges.
+  5. System saves the targets for subsequent rule evaluations.
+Alternative Flow: Invalid or out-of-range target: system requests correction.
+Postconditions:   Validated target values are stored for the zone.
+```
+
+```text
+USE CASE: UC-5 Monitor Dashboard & Telemetry
+----------------------------------------------------------------------------
+Primary Actor:    Greenhouse Operator
+Preconditions:    At least one zone is configured.
+Trigger:          Operator opens the monitoring dashboard.
+Main Flow:
+  1. System displays configured zones and their current device states.
+  2. System displays latest sensor readings and timestamps.
+  3. System identifies active actuators and manual overrides.
+  4. System displays the active control strategy and recent alerts.
+  5. System refreshes displayed data when new telemetry arrives.
+Alternative Flow: No telemetry available: system shows a clearly marked unavailable or stale reading.
+Postconditions:   Operator can inspect the latest available greenhouse state.
+```
+
+```text
+USE CASE: UC-7 Advance Simulation Time
+----------------------------------------------------------------------------
+Primary Actor:    Simulation Clock
+Preconditions:    Simulation environment is initialized.
+Trigger:          Simulation clock receives a step or scheduled tick.
+Main Flow:
+  1. Clock advances virtual time according to the configured step or scale.
+  2. System updates simulated environmental conditions.
+  3. System requests new sensor readings.
+  4. Sensor updates are published for rule evaluation (UC-8).
+  5. System records the new virtual time and updates monitoring information.
+Alternative Flow: Simulation paused: no automatic time advancement occurs.
+Postconditions:   Virtual time and simulated readings advance consistently.
+```
+
+```text
+USE CASE: UC-9 Dispatch Critical Alerts
+----------------------------------------------------------------------------
+Primary Actor:    Simulation Clock / Sensor Event
+Preconditions:    An alert-worthy condition has been detected during rule evaluation.
+Trigger:          Rule evaluation identifies a critical condition.
+Main Flow:
+  1. System creates an alert with severity, message, source and timestamp.
+  2. System associates the alert with the affected zone.
+  3. System publishes the alert to the monitoring interface.
+  4. System records the alert in the historical event log.
+  5. Operator can view the alert and its acknowledgment status.
+Alternative Flow: Duplicate alert condition: system follows the configured duplicate-handling policy.
+Postconditions:   Critical alert is visible and recorded.
+```
+
+```text
+USE CASE: UC-10 Trigger Actuator Action
+----------------------------------------------------------------------------
+Primary Actor:    Hardware / Device Service
+Preconditions:    Target actuator exists and is operational.
+Trigger:          Rule engine issues an approved actuator command.
+Main Flow:
+  1. System identifies the target actuator and requested action.
+  2. System checks actuator operational status and manual-override lock.
+  3. If allowed, system sends the command to the actuator.
+  4. Actuator updates its state and returns a result.
+  5. System records the outcome and publishes the new actuator state.
+Alternative Flow: Manual override or device fault: command is suppressed or rejected and the reason is logged.
+Postconditions:   Permitted actuator command is applied and logged.
+```
+
 ---
 
 #### 3.4.3 Object model
@@ -499,6 +598,23 @@ classDiagram
         Boolean isRunning
     }
 
+    class RuleEngine {
+        String engineId
+        Boolean isEnabled
+    }
+
+    class EventDispatcher {
+        String dispatcherId
+    }
+
+    class ActuatorController {
+        String controllerId
+    }
+
+    class DashboardUI {
+        String dashboardId
+    }
+
     %% Relationships
     Greenhouse "1" *-- "1..*" Zone : contains
     Zone --|> GreenhouseComponent
@@ -528,6 +644,14 @@ classDiagram
 
     Zone "1" o-- "0..*" Alert : generates
     SimulationClock "1" ..> Greenhouse : drives
+    Sensor "0..*" ..> EventDispatcher : publishes readings
+    EventDispatcher "1" --> "1" RuleEngine : notifies
+    EventDispatcher "1" --> "1" DashboardUI : updates
+    RuleEngine "1" --> "0..*" Rule : evaluates
+    RuleEngine "1" --> "1" ControlStrategy : consults
+    RuleEngine "1" ..> Actuator : issues approved commands
+    DashboardUI "1" ..> ActuatorController : submits override
+    ActuatorController "1" --> "0..*" Actuator : controls
 ```
 
 ---
